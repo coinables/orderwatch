@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+#btc{
+   border-radius: 7px;
+   border: 2px solid #1e1e1e;
+   padding: 5px;
+   width: 175px;
+}
+#last{
+   position: absolute;
+   top: 10px;
+   right: 10px;
+   font-family: "Arial", sans-serif;
+   color: #2f2f2f;
+}
+.buy{
+   padding: 5px;
+   height: 2px;
+   background-color: green;
+   display: inline-block;
+   border: 1px solid #1e1e1e;
+}
+.sell{
+   padding: 5px;
+   height: 2px;
+   background-color: red;
+   display: inline-block;
+   border: 1px solid #1e1e1e;
+}
+.cont{
+   display: inline-block;
+   border: 1px solid #1e1e1e;
+}
+</style>
+</head>
+<body>
+<h1>OrderWatch</h1>
+<p>A crude WebSocket market visualization stream of matched orders on bitfinex BTC/USD pair.</p>
+<div id="btc"></div><br>
+<div id="buys" class="cont"><h3>Buys</h3></div>
+<div id="sells" class="cont"><h3>Sells</h3></div>
+<div id="last"></div>
+<script>
+var ws = new WebSocket("wss://api-pub.bitfinex.com/ws/2");
+ws.onopen = function(){
+  ws.send(JSON.stringify({"event":"subscribe", "channel":"trades", "pair":"BTCUSD"}))
+};
+ws.onmessage = function(msg){
+  var response = JSON.parse(msg.data);
+  console.log(response);
+  var hb = response[1];
+  if(hb === "te"){
+    document.getElementById("btc").innerHTML = response[2][2]+" BTC";
+	var lastprice = response[2][3];
+	lastprice = lastprice.toFixed(2);
+	lastprice = nwc(lastprice);
+	document.getElementById("last").innerHTML = "<h2>$"+lastprice+"</h2>";
+	//analyze if buy or sell
+	var trade = response[2][2];
+        var pricenow = response[2][3];
+        document.title = pricenow.toFixed(2);
+	if(trade > 0){
+   		//its a buy  
+		var tradeperc = trade * 500;
+                tradeperc = tradeperc.toFixed(0);
+                var buyspan = '<div class="buy" width="'+tradeperc+'">&nbsp;</div>'; 
+				document.getElementById("buys").innerHTML += buyspan;
+        } else {
+               //its a sell
+		//convert for math
+                var tradecon = trade * -1;
+                
+                var tradeperc = tradecon * 500;
+				tradeperc = tradeperc.toFixed(0);
+				var sellspan = '<div class="sell" width="'+tradeperc+'">&nbsp;</div>'; 
+				document.getElementById("sells").innerHTML += sellspan;
+        }
+  }
+};
+function nwc(x) {
+    return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+}
+</script>
+</body>
+</html>
